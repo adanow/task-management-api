@@ -6,7 +6,12 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(psql:*)",
+      "Bash(docker:*)",
+      "Bash(sqlite3:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"tak\" npx prisma migrate reset:*)"
     ]
   }
 }
