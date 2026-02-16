@@ -6,17 +6,18 @@ import {
   getTaskById,
   updateTask,
 } from "../controllers/tasksController";
+import { auth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/", getAllTasks);
+router.get("/", auth, getAllTasks);
 
-router.get("/:id", getTaskById);
+router.get("/:id", auth, getTaskById);
 
-router.post("/", createTask);
+router.post("/", auth, createTask);
 
-router.put("/:id", updateTask);
+router.put("/:id", auth, updateTask);
 
-router.delete("/:id", deleteTask);
+router.delete("/:id", auth, deleteTask);
 
 export default router;

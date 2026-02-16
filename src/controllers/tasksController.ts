@@ -3,7 +3,9 @@ import prisma from "../lib/prisma";
 import { updateTaskSchema, createTaskSchema } from "../schemas/taskSchema";
 
 export const getAllTasks = async (req: Request, res: Response) => {
-  const tasks = await prisma.task.findMany();
+  const tasks = await prisma.task.findMany({
+    where: { userId: req.userId },
+  });
   return res.json(tasks);
 };
 
@@ -13,11 +15,9 @@ export const getTaskById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Invalid ID" });
   }
   const task = await prisma.task.findUnique({
-    where: {
-      id,
-    },
+    where: { id },
   });
-  if (!task) {
+  if (!task || task.userId !== req.userId) {
     return res.status(404).json({ error: "Task not found" });
   }
   res.json(task);
@@ -28,11 +28,15 @@ export const createTask = async (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({ error: result.error.issues[0].message });
   }
+  if (!req.userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   const task = await prisma.task.create({
     data: {
       title: result.data.title,
       description: result.data.description || "",
+      userId: req.userId,
     },
   });
   res.status(201).json(task);
@@ -50,6 +54,11 @@ export const updateTask = async (req: Request, res: Response) => {
   if (isNaN(id)) {
     return res.status(400).json({ error: "Invalid ID" });
   }
+  const existing = await prisma.task.findUnique({ where: { id } });
+  if (!existing || existing.userId !== req.userId) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
   try {
     const task = await prisma.task.update({
       where: { id },
@@ -67,15 +76,10 @@ export const deleteTask = async (req: Request, res: Response) => {
   if (isNaN(id)) {
     return res.status(400).json({ error: "Invalid ID" });
   }
-  try {
-    await prisma.task.delete({
-      where: {
-        id,
-      },
-    });
-
-    res.status(204).send();
-  } catch {
-    res.status(404).json({ error: "Task not found" });
+  const existing = await prisma.task.findUnique({ where: { id } });
+  if (!existing || existing.userId !== req.userId) {
+    return res.status(404).json({ error: "Task not found" });
   }
+  await prisma.task.delete({ where: { id } });
+  res.status(204).send();
 };
