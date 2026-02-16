@@ -66,7 +66,7 @@ describe("POST /tasks", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      error: "Title required",
+      error: "Invalid input: expected string, received undefined",
     });
   });
 });

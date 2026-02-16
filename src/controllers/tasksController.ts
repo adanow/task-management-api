@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import { updateTaskSchema, createTaskSchema } from "../schemas/taskSchema";
 
 export const getAllTasks = async (req: Request, res: Response) => {
   const tasks = await prisma.task.findMany();
@@ -23,26 +24,27 @@ export const getTaskById = async (req: Request, res: Response) => {
 };
 
 export const createTask = async (req: Request, res: Response) => {
-  if (!req.body.title) {
-    return res.status(400).json({ error: "Title required" });
+  const result = createTaskSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.issues[0].message });
   }
 
   const task = await prisma.task.create({
     data: {
-      title: req.body.title,
-      description: req.body.description || "",
+      title: result.data.title,
+      description: result.data.description || "",
     },
   });
   res.status(201).json(task);
 };
 
 export const updateTask = async (req: Request, res: Response) => {
-  if (!req.body.title) {
-    return res.status(400).json({ error: "Title required" });
+  const result = updateTaskSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.issues[0].message });
   }
-  const title = req.body.title;
-  const description = req.body.description;
-  const completed = req.body.completed;
+
+  const { title, description, completed } = result.data;
 
   const id = Number(req.params.id);
   if (isNaN(id)) {

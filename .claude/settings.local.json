@@ -12,7 +12,8 @@
       "Bash(sqlite3:*)",
       "Bash(npx prisma migrate:*)",
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"tak\" npx prisma migrate reset:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
