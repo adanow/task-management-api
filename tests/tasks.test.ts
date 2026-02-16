@@ -3,18 +3,32 @@ import app from "../src/app";
 import prisma from "../src/lib/prisma";
 
 beforeEach(async () => {
-  await prisma.task.deleteMany(); // czyści tabelę przed każdym testem
+  await prisma.task.deleteMany();
+  await prisma.user.deleteMany();
 });
 
 afterAll(async () => {
   await prisma.$disconnect(); // zamyka połączenie po wszystkich testach
 });
 
+async function getAuthToken(): Promise<string> {
+  await request(app).post("/auth/register").send({ email: "test@test.com", password: "123456" });
+
+  const res = await request(app)
+    .post("/auth/login")
+    .send({ email: "test@test.com", password: "123456" });
+
+  return res.body.token;
+}
+
 describe("GET /tasks", () => {
   it("200: array of tasks", async () => {
-    await request(app).post("/tasks").send({ title: "Test task" });
-
-    const response = await request(app).get("/tasks");
+    const token = await getAuthToken();
+    await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
+    const response = await request(app).get("/tasks").set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveLength(1);
@@ -25,9 +39,15 @@ describe("GET /tasks", () => {
 
 describe("GET /tasks/{id}", () => {
   it("200: single task", async () => {
-    const created = await request(app).post("/tasks").send({ title: "Test task" });
+    const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
 
-    const response = await request(app).get(`/tasks/${created.body.id}`);
+    const response = await request(app)
+      .get(`/tasks/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body.title).toBe("Test task");
@@ -35,14 +55,20 @@ describe("GET /tasks/{id}", () => {
   });
 
   it("404: not existing task", async () => {
-    const response = await request(app).get("/tasks/11");
+    const token = await getAuthToken();
+
+    const response = await request(app).get("/tasks/11").set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Task not found" });
   });
 
   it("400: invalid id", async () => {
-    const response = await request(app).get("/tasks/testId");
+    const token = await getAuthToken();
+
+    const response = await request(app)
+      .get("/tasks/testId")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "Invalid ID" });
@@ -51,9 +77,12 @@ describe("GET /tasks/{id}", () => {
 
 describe("POST /tasks", () => {
   it("201: create new task", async () => {
+    const token = await getAuthToken();
+
     const response = await request(app)
       .post("/tasks")
-      .send({ title: "Mój piaty task", description: "Testowy task" });
+      .send({ title: "Mój piaty task", description: "Testowy task" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(201);
     expect(response.body.description).toBe("Testowy task");
@@ -62,7 +91,12 @@ describe("POST /tasks", () => {
   });
 
   it("400: missing title", async () => {
-    const response = await request(app).post("/tasks").send({ description: "Testowy task" });
+    const token = await getAuthToken();
+
+    const response = await request(app)
+      .post("/tasks")
+      .send({ description: "Testowy task" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -73,16 +107,24 @@ describe("POST /tasks", () => {
 
 describe("DELETE /tasks/{id}", () => {
   it("204: delete existing task", async () => {
-    const created = await request(app).post("/tasks").send({ title: "Test task" });
+    const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
 
-    const response = await request(app).delete(`/tasks/${created.body.id}`);
+    const response = await request(app)
+      .delete(`/tasks/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(204);
     expect(response.body).toEqual({});
   });
 
   it("404: delete non existing task", async () => {
-    const response = await request(app).delete("/tasks/11");
+    const token = await getAuthToken();
+
+    const response = await request(app).delete("/tasks/11").set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Task not found" });
@@ -91,11 +133,16 @@ describe("DELETE /tasks/{id}", () => {
 
 describe("PUT /tasks/{id}", () => {
   it("200: update existing task", async () => {
-    const created = await request(app).post("/tasks").send({ title: "Test task" });
+    const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
 
     const response = await request(app)
       .put(`/tasks/${created.body.id}`)
-      .send({ title: "test description", description: "test description" });
+      .send({ title: "test description", description: "test description" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body.id).toBe(created.body.id);
@@ -105,29 +152,40 @@ describe("PUT /tasks/{id}", () => {
   });
 
   it("404: non existing task", async () => {
+    const token = await getAuthToken();
     const response = await request(app)
       .put("/tasks/11")
-      .send({ title: "test description", description: "test description" });
+      .send({ title: "test description", description: "test description" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Task not found" });
   });
 
   it("400: invalid id", async () => {
+    const token = await getAuthToken();
+
     const response = await request(app)
       .put("/tasks/test")
-      .send({ title: "test description", description: "test description" });
+      .send({ title: "test description", description: "test description" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "Invalid ID" });
   });
 
   it("400: missing title", async () => {
-    const created = await request(app).post("/tasks").send({ title: "Test" });
+    const token = await getAuthToken();
+
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
 
     const response = await request(app)
       .put(`/tasks/${created.body.id}`)
-      .send({ description: "only description" });
+      .send({ description: "only description" })
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(400);
   });
