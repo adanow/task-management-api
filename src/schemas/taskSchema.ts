@@ -16,4 +16,6 @@ export const taskQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).optional().default(10),
   completed: z.enum(["true", "false"]).optional(),
   search: z.string().optional(),
+  sort: z.enum(["title", "createdAt"]).optional().default("createdAt"),
+  order: z.enum(["asc", "desc"]).optional().default("desc"),
 });

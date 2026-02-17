@@ -7,7 +7,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({ error: result.error.issues[0].message });
   }
-  const { page, limit, completed, search } = result.data;
+  const { page, limit, completed, search, sort, order } = result.data;
   const where: any = { userId: req.userId };
 
   if (completed !== undefined) {
@@ -16,11 +16,13 @@ export const getAllTasks = async (req: Request, res: Response) => {
   if (search) {
     where.title = { contains: search };
   }
+
   const [tasks, total] = await Promise.all([
     prisma.task.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
+      orderBy: { [sort]: order },
     }),
     prisma.task.count({ where }),
   ]);
@@ -59,14 +61,18 @@ export const createTask = async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const task = await prisma.task.create({
-    data: {
-      title: result.data.title,
-      description: result.data.description || "",
-      userId: req.userId,
-    },
-  });
-  res.status(201).json(task);
+  try {
+    const task = await prisma.task.create({
+      data: {
+        title: result.data.title,
+        description: result.data.description || "",
+        userId: req.userId!,
+      },
+    });
+    res.status(201).json(task);
+  } catch {
+    res.status(500).json({ error: "Failed to create task" });
+  }
 };
 
 export const updateTask = async (req: Request, res: Response) => {

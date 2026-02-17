@@ -34,7 +34,7 @@ describe("GET /tasks", () => {
       .send({ title: "Test task2" });
 
     const response = await request(app)
-      .get("/tasks?page=1&limit=5")
+      .get("/tasks?page=1&limit=5&sort=title&order=asc")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
