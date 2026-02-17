@@ -1,12 +1,39 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { updateTaskSchema, createTaskSchema } from "../schemas/taskSchema";
+import { updateTaskSchema, createTaskSchema, taskQuerySchema } from "../schemas/taskSchema";
 
 export const getAllTasks = async (req: Request, res: Response) => {
-  const tasks = await prisma.task.findMany({
-    where: { userId: req.userId },
+  const result = taskQuerySchema.safeParse(req.query);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.issues[0].message });
+  }
+  const { page, limit, completed, search } = result.data;
+  const where: any = { userId: req.userId };
+
+  if (completed !== undefined) {
+    where.completed = completed === "true";
+  }
+  if (search) {
+    where.title = { contains: search };
+  }
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  return res.json({
+    data: tasks,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   });
-  return res.json(tasks);
 };
 
 export const getTaskById = async (req: Request, res: Response) => {

@@ -22,18 +22,56 @@ async function getAuthToken(): Promise<string> {
 }
 
 describe("GET /tasks", () => {
-  it("200: array of tasks", async () => {
+  it("200: first page of 5 tasks", async () => {
     const token = await getAuthToken();
     await request(app)
       .post("/tasks")
       .set("Authorization", `Bearer ${token}`)
-      .send({ title: "Test task" });
-    const response = await request(app).get("/tasks").set("Authorization", `Bearer ${token}`);
+      .send({ title: "Test task1" });
+    await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task2" });
+
+    const response = await request(app)
+      .get("/tasks?page=1&limit=5")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].title).toBe("Test task");
-    expect(response.body[0].completed).toBe(false);
+    expect(response.body.meta.limit).toBe(5);
+    expect(response.body.meta.page).toBe(1);
+    expect(response.body.meta.total).toBe(2);
+    expect(response.body.meta.totalPages).toBe(1);
+
+    expect(response.body.data[0].title).toBe("Test task1");
+    expect(response.body.data[1].title).toBe("Test task2");
+  });
+
+  it("200: filter by completed", async () => {
+    const token = await getAuthToken();
+
+    await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Todo task" });
+
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Done task" });
+
+    await request(app)
+      .put(`/tasks/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Done task", completed: true });
+
+    const response = await request(app)
+      .get("/tasks?completed=true")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].title).toBe("Done task");
+    expect(response.body.meta.total).toBe(1);
   });
 });
 

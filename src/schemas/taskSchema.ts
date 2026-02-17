@@ -10,3 +10,10 @@ export const updateTaskSchema = z.object({
   description: z.string().optional(),
   completed: z.boolean().optional(),
 });
+
+export const taskQuerySchema = z.object({
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(100).optional().default(10),
+  completed: z.enum(["true", "false"]).optional(),
+  search: z.string().optional(),
+});
