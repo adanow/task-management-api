@@ -228,3 +228,78 @@ describe("PUT /tasks/{id}", () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe("PATCH /tasks/{id}", () => {
+  it("200: update title only", async () => {
+    const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test title", description: "test description" });
+
+    const response = await request(app)
+      .patch(`/tasks/${created.body.id}`)
+      .send({ title: "Updated title" })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(created.body.id);
+    expect(response.body.description).toBe("test description");
+    expect(response.body.title).toBe("Updated title");
+    expect(response.body.completed).toBe(false);
+  });
+
+  it("200: update completed only", async () => {
+    const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test title", description: "test description" });
+
+    const response = await request(app)
+      .patch(`/tasks/${created.body.id}`)
+      .send({ completed: true })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(created.body.id);
+    expect(response.body.description).toBe("test description");
+    expect(response.body.title).toBe("Test title");
+    expect(response.body.completed).toBe(true);
+  });
+
+  it("404: non existing task", async () => {
+    const token = await getAuthToken();
+    const response = await request(app)
+      .patch("/tasks/11")
+      .send({ title: "test description", description: "test description" })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Task not found" });
+  });
+
+  it("400: invalid id", async () => {
+    const token = await getAuthToken();
+
+    const response = await request(app)
+      .patch("/tasks/test")
+      .send({ title: "test description", description: "test description" })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "Invalid ID" });
+  });
+
+  it("400: empty body", async () => {
+    const token = await getAuthToken();
+
+    const response = await request(app)
+      .patch("/tasks/test")
+      .send({})
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "At least one field must be provided" });
+  });
+});

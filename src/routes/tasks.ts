@@ -4,6 +4,7 @@ import {
   deleteTask,
   getAllTasks,
   getTaskById,
+  patchTask,
   updateTask,
 } from "../controllers/tasksController";
 import { auth } from "../middleware/auth";
@@ -17,6 +18,8 @@ router.get("/:id", auth, getTaskById);
 router.post("/", auth, createTask);
 
 router.put("/:id", auth, updateTask);
+
+router.patch("/:id", auth, patchTask);
 
 router.delete("/:id", auth, deleteTask);
 

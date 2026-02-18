@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { updateTaskSchema, createTaskSchema, taskQuerySchema } from "../schemas/taskSchema";
+import {
+  updateTaskSchema,
+  createTaskSchema,
+  taskQuerySchema,
+  patchTaskSchema,
+} from "../schemas/taskSchema";
 
 export const getAllTasks = async (req: Request, res: Response) => {
   const result = taskQuerySchema.safeParse(req.query);
@@ -102,6 +107,29 @@ export const updateTask = async (req: Request, res: Response) => {
   } catch {
     res.status(404).json({ error: "Task not found" });
   }
+};
+
+export const patchTask = async (req: Request, res: Response) => {
+  const result = patchTaskSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.issues[0].message });
+  }
+
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid ID" });
+  }
+  const existing = await prisma.task.findUnique({ where: { id } });
+  if (!existing || existing.userId !== req.userId) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  const task = await prisma.task.update({
+    where: { id },
+    data: result.data,
+  });
+
+  res.status(200).json(task);
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
