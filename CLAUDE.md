@@ -40,7 +40,7 @@ src/
 │   ├── auth.ts            — JWT verification middleware (sets req.userId)
 │   └── errorHandler.ts    — Global error handler (returns JSON, not HTML)
 ├── schemas/
-│   ├── taskSchema.ts      — Zod schemas for create/update task
+│   ├── taskSchema.ts      — Zod schemas for create/update/patch task
 │   └── authSchema.ts      — Zod schema for register/login
 ├── types/
 │   └── express.d.ts       — Declaration merging (adds userId to Request)
@@ -50,7 +50,7 @@ src/
     └── prisma/            — Auto-generated Prisma client (gitignored)
 tests/
 ├── health.test.ts         — Health check endpoint test (1 test)
-├── tasks.test.ts          — Task CRUD tests with auth (12 tests)
+├── tasks.test.ts          — Task CRUD tests with auth (18 tests)
 └── auth.test.ts           — Register + login tests (7 tests)
 prisma/
 ├── schema.prisma          — Database schema (User + Task models)
@@ -67,6 +67,7 @@ prisma/
 - Validate request body with Zod schemas (safeParse + issues[0].message)
 - Validate req.params.id with Number() + isNaN() — return 400 for invalid IDs
 - Tasks are scoped to authenticated user (userId from JWT token)
+- Task priority: enum `low`, `medium`, `high` (default: `medium`)
 - Prisma client is a singleton (one instance in lib/prisma.ts)
 - JWT secret from env: process.env.JWT_SECRET || "dev-secret"
 - ESLint rules: no-var, prefer-const, eqeqeq, no-explicit-any (warn), explicit-function-return-type (warn)
@@ -94,10 +95,11 @@ prisma/
 | GET | /health | No | Health check |
 | POST | /auth/register | No | Register new user |
 | POST | /auth/login | No | Login, returns JWT token |
-| GET | /tasks | Yes | List user's tasks |
+| GET | /tasks | Yes | List user's tasks (filter: completed, priority, search; sort: title, createdAt, priority) |
 | GET | /tasks/:id | Yes | Get user's task by ID |
 | POST | /tasks | Yes | Create new task |
-| PUT | /tasks/:id | Yes | Update user's task |
+| PUT | /tasks/:id | Yes | Update user's task (full) |
+| PATCH | /tasks/:id | Yes | Update user's task (partial) |
 | DELETE | /tasks/:id | Yes | Delete user's task |
 
 ## Collaboration Mode

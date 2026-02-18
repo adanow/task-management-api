@@ -12,11 +12,14 @@ export const getAllTasks = async (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({ error: result.error.issues[0].message });
   }
-  const { page, limit, completed, search, sort, order } = result.data;
+  const { page, limit, completed, search, sort, order, priority } = result.data;
   const where: any = { userId: req.userId };
 
   if (completed !== undefined) {
     where.completed = completed === "true";
+  }
+  if (priority !== undefined) {
+    where.priority = priority;
   }
   if (search) {
     where.title = { contains: search };
