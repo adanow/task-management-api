@@ -47,10 +47,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
 };
 
 export const getTaskById = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid ID" });
-  }
+  const id = req.resourceId;
   const task = await prisma.task.findUnique({
     where: { id },
   });
@@ -91,10 +88,7 @@ export const updateTask = async (req: Request, res: Response) => {
 
   const { title, description, completed } = result.data;
 
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid ID" });
-  }
+  const id = req.resourceId;
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing || existing.userId !== req.userId) {
     return res.status(404).json({ error: "Task not found" });
@@ -118,10 +112,7 @@ export const patchTask = async (req: Request, res: Response) => {
     return res.status(400).json({ error: result.error.issues[0].message });
   }
 
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid ID" });
-  }
+  const id = req.resourceId;
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing || existing.userId !== req.userId) {
     return res.status(404).json({ error: "Task not found" });
@@ -136,10 +127,7 @@ export const patchTask = async (req: Request, res: Response) => {
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid ID" });
-  }
+  const id = req.resourceId;
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing || existing.userId !== req.userId) {
     return res.status(404).json({ error: "Task not found" });

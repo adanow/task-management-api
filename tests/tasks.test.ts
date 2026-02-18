@@ -293,9 +293,13 @@ describe("PATCH /tasks/{id}", () => {
 
   it("400: empty body", async () => {
     const token = await getAuthToken();
+    const created = await request(app)
+      .post("/tasks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Test task" });
 
     const response = await request(app)
-      .patch("/tasks/test")
+      .patch(`/tasks/${created.body.id}`)
       .send({})
       .set("Authorization", `Bearer ${token}`);
 
